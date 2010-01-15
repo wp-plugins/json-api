@@ -2,8 +2,8 @@
 Contributors: dphiffer
 Tags: json, api, ajax, cms, admin, integration, moma
 Requires at least: 2.8
-Tested up to: 2.8
-Stable tag: 0.7
+Tested up to: 2.9
+Stable tag: 0.7.3
 
 A RESTful API for WordPress
 
@@ -11,7 +11,7 @@ A RESTful API for WordPress
 
 This plugin was created for The Museum of Modern Art, whose weblog [Inside/Out](http://moma.org/explore/inside_out) appears within an existing structure built with Ruby on Rails. Instead of reimplementing the site templates as a WordPress theme, we opted for a Rails front-end that displays content served from a WordPress back-end. JSON API provides the necessary interface for retrieving content and accepting comment submissions.
 
-The current release (0.6) implements a mostly-complete set of introspection methods and a method for submitting comments. I plan on offering a complete set of authentication & data manipulation methods, but my current focus is on features we're actually using at MoMA.org.
+The current release implements a mostly-complete set of introspection methods and a method for submitting comments. I plan on offering a complete set of authentication & data manipulation methods, but my current focus is on features we're actually using at MoMA.org.
 
 See the Other Notes section for complete API documentation.
 
@@ -132,6 +132,7 @@ These arguments are available to modify all introspection methods:
 * `exclude` - Specifies which post data fields to exclude. Expects a comma-separated list of post fields.
 * `custom_fields` - Includes values from posts' Custom Fields. Expects a comma-separated list of custom field keys.
 * `author_meta` - Includes additional author metadata. Should be a comma-separated list of metadata fields.
+* `count` - Controls the number of posts to include (defaults to the number specified by WordPress)
 
 __About `include`/`exclude` arguments__  
 By default you get all values included with each post object. Specify a list of `include` values will cause the post object to filter out the values absent from the list. Specifying `exclude` causes post objects to include all values except the fields you list. For example, the query `exclude=comments` includes everything *except* the comments.
@@ -557,6 +558,15 @@ Submits a comment to a WordPress post.
 
 
 == Changelog ==
+
+= 0.7.3 (2010-01-15): =
+* Added a `count` request parameter to control the number of posts returned
+
+= 0.7.2 (2010-01-14): =
+* Removed the version number from the description text
+
+= 0.7.1 (2010-01-14): =
+* Fixed another subtle bug with `get_author_index`
 
 = 0.7 (2010-01-08): =
 * Added a `post_count` response to tag objects
