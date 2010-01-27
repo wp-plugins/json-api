@@ -165,6 +165,10 @@ class JSON_API_Introspector {
       $amp = empty($query) ? '' : '&';
       $query .= "{$amp}paged=" . get_query_var('page');
     }
+    if (get_query_var('count')) {
+      $amp = empty($query) ? '' : '&';
+      $query .= "{$amp}posts_per_page=" . get_query_var('count');
+    }
     if (!empty($query)) {
       query_posts($query);
     }
@@ -185,6 +189,17 @@ class JSON_API_Introspector {
       $comments[] = new JSON_API_Comment($wp_comment);
     }
     return $comments;
+  }
+  
+  function get_attachments($post_id) {
+    $wp_attachments = get_children("post_type=attachment&post_parent=$post_id");
+    $attachments = array();
+    if (!empty($wp_attachments)) {
+      foreach ($wp_attachments as $wp_attachment) {
+        $attachments[] = new JSON_API_Attachment($wp_attachment);
+      }
+    }
+    return $attachments;
   }
   
 }

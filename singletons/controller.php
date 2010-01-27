@@ -45,6 +45,7 @@ class JSON_API_Controller {
     require_once "$json_api_dir/models/category.php";
     require_once "$json_api_dir/models/tag.php";
     require_once "$json_api_dir/models/author.php";
+    require_once "$json_api_dir/models/attachment.php";
   }
   
   function error($message, $status = 'error') {
@@ -190,7 +191,7 @@ class JSON_API_Controller {
     $authors = $this->introspector->get_authors();
     return $this->response->get_json(array(
       'count' => count($authors),
-      'authors' => $authors
+      'authors' => array_values($authors)
     ));
   }
   
