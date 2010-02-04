@@ -19,6 +19,9 @@ class JSON_API_Controller {
       $this->setup();
       $this->query->setup();
       
+      // Run Plugin hooks for method
+      do_action("json_api_$method");
+      
       // Run the method
       $result = $this->$method();
       
@@ -45,6 +48,7 @@ class JSON_API_Controller {
     require_once "$json_api_dir/models/category.php";
     require_once "$json_api_dir/models/tag.php";
     require_once "$json_api_dir/models/author.php";
+    require_once "$json_api_dir/models/attachment.php";
   }
   
   function error($message, $status = 'error') {
@@ -190,18 +194,24 @@ class JSON_API_Controller {
     $authors = $this->introspector->get_authors();
     return $this->response->get_json(array(
       'count' => count($authors),
-      'authors' => $authors
+      'authors' => array_values($authors)
+    ));
+  }
+  
+  function create_post() {
+    nocache_headers();
+    $post = new JSON_API_Post();
+    $id = $post->create($_REQUEST);
+    if (empty($id)) {
+      $this->error("Could not create post.");
+    }
+    return $this->response->get_json(array(
+      'post' => $post
     ));
   }
   
   function submit_comment() {
     nocache_headers();
-    $required = array(
-      'post_id',
-      'name',
-      'email',
-      'content'
-    );
     if (empty($_REQUEST['post_id'])) {
       $this->error("No post specified. Include 'post_id' var in your request.");
     } else if (empty($_REQUEST['name']) ||
