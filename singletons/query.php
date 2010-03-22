@@ -16,6 +16,7 @@ class JSON_API_Query {
                      //     * 'get_category_index'
                      //     * 'get_tag_index'
                      //     * 'get_author_index'
+                     //     * 'get_page_index'
                      //     * 'get_search_results'
                      //     * 'submit_comment'
                      //     * Any non-empty value to trigger the API implicitly
@@ -23,6 +24,7 @@ class JSON_API_Query {
     'dev',           // Triggers a developer-friendly print_r() output
     'redirect',      // Triggers a redirect response to the specified URL
     'page',          // Returns a specific page of results
+    'count',         // Controls the number of posts returned
     'post_id',       // Used by the get_post API method
     'post_slug',     // Used by the get_post API method
     'page_id',       // Used by the get_page API method
@@ -36,6 +38,7 @@ class JSON_API_Query {
     'author_slug',   // Used by get_author_posts API method
     'date',          // Used by get_date_posts API method
                      //   Expects 'YYYY', 'YYYYMM' or 'YYYYMMDD'
+    'parent',        // Used by get_page_index API method
     'date_format',   // Changes the format of date values
                      //   Uses the same syntax as PHP's date() function
                      //   Default value is Y-m-d H:i:s
