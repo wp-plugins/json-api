@@ -19,6 +19,9 @@ class JSON_API_Controller {
       $this->setup();
       $this->query->setup();
       
+      // Run Plugin hooks for method
+      do_action("json_api_$method");
+      
       // Run the method
       $result = $this->$method();
       
@@ -45,6 +48,7 @@ class JSON_API_Controller {
     require_once "$json_api_dir/models/category.php";
     require_once "$json_api_dir/models/tag.php";
     require_once "$json_api_dir/models/author.php";
+    require_once "$json_api_dir/models/attachment.php";
   }
   
   function error($message, $status = 'error') {
@@ -88,6 +92,22 @@ class JSON_API_Controller {
       $this->error("No page specified. Include 'page_id' or 'page_slug' var in your request.");
     }
     $pages = $this->introspector->get_posts($query);
+    
+    // Workaround for https://core.trac.wordpress.org/ticket/12647
+    if (empty($pages)) {
+      $url = $_SERVER['REQUEST_URI'];
+      $parsed_url = parse_url($url);
+      $path = $parsed_url['path'];
+      if (preg_match('#^http://[^/]+(/.+)$#', get_bloginfo('url'), $matches)) {
+        $blog_root = $matches[1];
+        $path = preg_replace("#^$blog_root#", '', $path);
+      }
+      if (substr($path, 0, 1) == '/') {
+        $path = substr($path, 1);
+      }
+      $pages = $this->introspector->get_posts("pagename=$path");
+    }
+    
     if (count($pages) == 1) {
       return $this->response->get_json(array(
         'page' => $pages[0]
@@ -110,7 +130,7 @@ class JSON_API_Controller {
   
   function get_category_posts() {
     $query = '';
-    if ($this->query->catgegory_id) {
+    if ($this->query->category_id) {
       $query = "cat={$this->query->category_id}";
     } else if ($this->query->category_slug) {
       $query = "category_name={$this->query->category_slug}";
@@ -190,18 +210,27 @@ class JSON_API_Controller {
     $authors = $this->introspector->get_authors();
     return $this->response->get_json(array(
       'count' => count($authors),
-      'authors' => $authors
+      'authors' => array_values($authors)
+    ));
+  }
+  
+  function create_post() {
+    if (!current_user_can('edit_posts')) {
+      $this->error("You need to login with a user capable of creating posts.");
+    }
+    nocache_headers();
+    $post = new JSON_API_Post();
+    $id = $post->create($_REQUEST);
+    if (empty($id)) {
+      $this->error("Could not create post.");
+    }
+    return $this->response->get_json(array(
+      'post' => $post
     ));
   }
   
   function submit_comment() {
     nocache_headers();
-    $required = array(
-      'post_id',
-      'name',
-      'email',
-      'content'
-    );
     if (empty($_REQUEST['post_id'])) {
       $this->error("No post specified. Include 'post_id' var in your request.");
     } else if (empty($_REQUEST['name']) ||
