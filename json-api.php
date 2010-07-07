@@ -3,20 +3,43 @@
 Plugin Name: JSON API
 Plugin URI: http://wordpress.org/extend/plugins/json-api/
 Description: A RESTful API for WordPress
-Version: 0.7
+Version: 1.0.4
 Author: Dan Phiffer
 Author URI: http://phiffer.org/
 */
 
-global $json_api_dir;
-$json_api_dir = WP_PLUGIN_DIR . '/json-api';
+$dir = json_api_dir();
+@include_once "$dir/singletons/api.php";
+@include_once "$dir/singletons/query.php";
+@include_once "$dir/singletons/introspector.php";
+@include_once "$dir/singletons/response.php";
+@include_once "$dir/models/post.php";
+@include_once "$dir/models/comment.php";
+@include_once "$dir/models/category.php";
+@include_once "$dir/models/tag.php";
+@include_once "$dir/models/author.php";
+@include_once "$dir/models/attachment.php";
 
 function json_api_init() {
-  // Initialize the controller and query inspector
-  global $json_api, $json_api_dir;
-  require_once "$json_api_dir/singletons/controller.php";
-  require_once "$json_api_dir/singletons/query.php";
-  $json_api = new JSON_API_Controller();
+  global $json_api;
+  if (phpversion() < 5) {
+    add_action('admin_notices', 'json_api_php_version_warning');
+    return;
+  }
+  if (!class_exists('JSON_API')) {
+    add_action('admin_notices', 'json_api_class_warning');
+    return;
+  }
+  add_filter('rewrite_rules_array', 'json_api_rewrites');
+  $json_api = new JSON_API();
+}
+
+function json_api_php_version_warning() {
+  echo "<div id=\"json-api-warning\" class=\"updated fade\"><p>Sorry, JSON API requires PHP version 5.0 or greater.</p></div>";
+}
+
+function json_api_class_warning() {
+  echo "<div id=\"json-api-warning\" class=\"updated fade\"><p>Oops, JSON_API class not found. If you've defined a JSON_API_DIR constant, double check that the path is correct.</p></div>";
 }
 
 function json_api_activation() {
@@ -33,16 +56,28 @@ function json_api_deactivation() {
 }
 
 function json_api_rewrites($wp_rules) {
-  // Register the rewrite rule /api/[method] => ?json=[method]
+  $base = get_option('json_api_base', 'api');
+  if (empty($base)) {
+    return $wp_rules;
+  }
   $json_api_rules = array(
-    'api/(.+)$' => 'index.php?json=$matches[1]'
+    "$base\$" => 'index.php?json=info',
+    "$base/(.+)\$" => 'index.php?json=$matches[1]'
   );
   return array_merge($json_api_rules, $wp_rules);
 }
 
+function json_api_dir() {
+  if (defined('JSON_API_DIR') && file_exists(JSON_API_DIR)) {
+    return JSON_API_DIR;
+  } else {
+    return dirname(__FILE__);
+  }
+}
+
 // Add initialization and activation hooks
 add_action('init', 'json_api_init');
-register_activation_hook("$json_api_dir/json-api.php", 'json_api_activation');
-register_deactivation_hook("$json_api_dir/json-api.php", 'json_api_deactivation');
+register_activation_hook("$dir/json-api.php", 'json_api_activation');
+register_deactivation_hook("$dir/json-api.php", 'json_api_deactivation');
 
 ?>
