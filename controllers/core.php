@@ -44,51 +44,28 @@ class JSON_API_Core_Controller {
   
   public function get_posts() {
     global $json_api;
-    extract($json_api->query->get(array('meta_key', 'meta_value', 'parent_id', 'post_type')));
-    $query = array();
-    if ($meta_key) {
-      $query['meta_key'] = $meta_key;
-    }
-    if ($meta_value) {
-      $query['meta_value'] = $meta_value;
-    }
-    if (isset($_REQUEST['parent_id'])) {
-      $query['post_parent'] = $parent_id;
-    }
-    if ($post_type) {
-      $query['post_type'] = $post_type;
-    }
+    $url = parse_url($_SERVER['REQUEST_URI']);
+    $defaults = array(
+      'ignore_sticky_posts' => true
+    );
+    $query = wp_parse_args($url['query']);
+    unset($query['json']);
+    unset($query['post_status']);
+    $query = array_merge($defaults, $query);
     $posts = $json_api->introspector->get_posts($query);
-    return $this->posts_result($posts);
+    $result = $this->posts_result($posts);
+    $result['query'] = $query;
+    return $result;
   }
   
   public function get_post() {
     global $json_api, $post;
-    extract($json_api->query->get(array('id', 'slug', 'post_id', 'post_slug')));
-    if ($id || $post_id) {
-      if (!$id) {
-        $id = $post_id;
-      }
-      $posts = $json_api->introspector->get_posts(array(
-        'p' => $id
-      ), true);
-    } else if ($slug || $post_slug) {
-      if (!$slug) {
-        $slug = $post_slug;
-      }
-      $posts = $json_api->introspector->get_posts(array(
-        'name' => $slug
-      ), true);
-    } else {
-      $json_api->error("Include 'id' or 'slug' var in your request.");
-    }
-    if (count($posts) == 1) {
-      $post = $posts[0];
+    $post = $json_api->introspector->get_current_post();
+    if ($post) {
       $previous = get_adjacent_post(false, '', true);
       $next = get_adjacent_post(false, '', false);
-      $post = new JSON_API_Post($post);
       $response = array(
-        'post' => $post
+        'post' => new JSON_API_Post($post)
       );
       if ($previous) {
         $response['previous_url'] = get_permalink($previous->ID);
@@ -231,7 +208,13 @@ class JSON_API_Core_Controller {
   
   public function get_category_index() {
     global $json_api;
-    $categories = $json_api->introspector->get_categories();
+    $args = null;
+    if (!empty($json_api->query->parent)) {
+      $args = array(
+        'parent' => $json_api->query->parent
+      );
+    }
+    $categories = $json_api->introspector->get_categories($args);
     return array(
       'count' => count($categories),
       'categories' => $categories
